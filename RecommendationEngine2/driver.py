@@ -1,6 +1,8 @@
 import pandas as pd
 import tkinter as tk
-from tkinter import Listbox, StringVar, Entry, Label, Button
+from tkinter import Listbox, StringVar, Entry, Label, Button, ttk
+
+from sklearn.cluster import KMeans
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -65,11 +67,8 @@ def select_movie(*args):
     selection = listbox.get(listbox.curselection())
     selectedRow = movies[movies['title'] == selection]
     print(selectedRow)
-    # if selection:
-    #     selected_movie.set(movies[selection[0]])
-    #     print("Selected movie:", selected_movie.get())  # For demonstration, print to console
 
-def enter(*args):
+def enter(selected_movie_arg):
     listbox.pack_forget()
     answerList.bindtags([answerList, app, "all"])
     answerList.insert(tk.END, 'This is where we add our results. This text currently represents one element')
@@ -81,36 +80,68 @@ def reset(*args):
     answerList.delete(0, tk.END)
     answerList.pack_forget()
 
+#CLUSTERING STUFF
+
+# convert genres to one-hot encoding
+def preprocess_genres(movies):
+    genres = movies['genres'].str.get_dummies(sep='|')
+    return genres
+
+
+# One-hot encoded genres
+preprocessed_data = preprocess_genres(movies)
+
+# Jaccard Similarity for Titles
+def calc_jaccard_similarity(selected_movie, movies_df):
+    titles = movies_df['title'].tolist()
+    title_sets = [set(title.lower().split()) for title in titles]
+    selected_title_set = set(selected_movie.lower().split)
+
+
 app = tk.Tk()
 app.title("Movie Search and Select")
 
-answerList = Listbox(app)
+# This is the k-value for clustering
+k_label = tk.Label(app, text="k:")
+k_label.pack()
 
-search_var = StringVar()
-search_var.trace("w", update_listbox)  # Trace changes to the search_var
-selected_movie = StringVar()  # Variable to hold the selected movie
+k_spinbox = ttk.Spinbox(app, from_=3, to=100, width=5)
+k_spinbox.pack()
 
-# Search box
-search_label = Label(app, text="Search:")
+cluster_by_title = tk.IntVar(value=0)  # Default to checked for "Title"
+cluster_by_genres = tk.IntVar(value=0)  # Default to unchecked for "Genres"
+
+# Create checkboxes for Title/Genre for clustering
+title_checkbox = tk.Checkbutton(app, text="Title", variable=cluster_by_title)
+genres_checkbox = tk.Checkbutton(app, text="Genres", variable=cluster_by_genres)
+
+title_checkbox.pack()
+genres_checkbox.pack()
+
+answerList = tk.Listbox(app)
+
+search_var = tk.StringVar()
+search_var.trace("w", lambda name, index, mode, sv=search_var: update_listbox(sv))  # Adjusted for lambda
+selected_movie = tk.StringVar()
+
+search_label = tk.Label(app, text="Search:")
 search_label.pack()
-search_entry = Entry(app, textvariable=search_var)
+
+search_entry = tk.Entry(app, textvariable=search_var)
 search_entry.pack()
 
-enterButton = Button(app, text="Enter", fg='black', command=enter)
+enterButton = tk.Button(app, text="Enter", fg='black', command=enter)
 enterButton.pack(expand=False)
 
-resetButton = Button(app, text="Reset", foreground='red', command=reset)
+resetButton = tk.Button(app, text="Reset", foreground='red', command=reset)
 resetButton.pack()
 
-# Listbox for displaying movies
-listbox = Listbox(app)
+listbox = tk.Listbox(app)
 listbox.pack(fill=tk.BOTH, expand=True)
-listbox.bind('<<ListboxSelect>>', select_movie)  # Bind selection event
+listbox.bind('<<ListboxSelect>>', select_movie)
 
-# Initialize listbox with all movies
-update_listbox()
+update_listbox()  # Initially populate the listbox
 
 app.mainloop()
 
-# After the GUI is closed, you can access the selected_movie variable
 print("Last selected movie:", selected_movie.get())
