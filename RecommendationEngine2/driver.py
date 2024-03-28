@@ -2,7 +2,11 @@ import pandas as pd
 import tkinter as tk
 from tkinter import Listbox, StringVar, Entry, Label, Button, ttk
 
+from scipy.sparse import hstack
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -120,6 +124,76 @@ def calc_jaccard_similarity(selected_movie, movies_df):
     titles = movies_df['title'].tolist()
     title_sets = [set(title.lower().split()) for title in titles]
     selected_title_set = set(selected_movie.lower().split)
+
+
+# Cluster movies based on genres
+def cluster_movies_by_genre(movies_df, selected_movie, k):
+    # One-hot encode the genres
+    genre_matrix = movies_df['genres'].str.get_dummies(sep='|')
+
+    # Apply k-means clustering
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    genre_clusters = kmeans.fit_predict(genre_matrix)
+
+    # Find the cluster of the selected movie
+    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
+    selected_movie_cluster = genre_clusters[selected_movie_index]
+
+    # Find other movies in the same cluster
+    cluster_movies = movies_df.iloc[genre_clusters == selected_movie_cluster]
+
+    return cluster_movies
+
+
+def cluster_movies_by_title(movies_df, selected_movie, k):
+    # Extract TF-IDF features from movie titles
+    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df['title'])
+
+    # Maybe Optional?: Apply dimensionality reduction (comment if needed)
+    pca = PCA(n_components=0.95)  # Retain 95% of variance
+    tfidf_matrix_reduced = pca.fit_transform(tfidf_matrix.toarray())
+
+    # Apply k-means clustering
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    title_clusters = kmeans.fit_predict(tfidf_matrix_reduced)
+
+    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
+    selected_movie_cluster = title_clusters[selected_movie_index]
+
+    cluster_movies = movies_df.iloc[title_clusters == selected_movie_cluster]
+
+    return cluster_movies
+
+
+def cluster_movies_by_title_and_genre(movies_df, selected_movie, k):
+    # Process genres: One-hot encoding
+    genre_matrix = movies_df['genres'].str.get_dummies(sep='|')
+
+    # Process titles: TF-IDF
+    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+    title_matrix = tfidf_vectorizer.fit_transform(movies_df['title'])
+
+    # Combine features: Stacking the genre and title matrices horizontally
+    combined_features = hstack([genre_matrix, title_matrix])
+
+    # Normalize the combined features to ensure equal importance
+    scaler = StandardScaler(with_mean=False)  # Avoid centering sparse matrix
+    combined_features_normalized = scaler.fit_transform(combined_features)
+
+    # Clustering: Apply k-means (or another suitable algorithm) on the normalized features
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    clusters = kmeans.fit_predict(combined_features_normalized)
+
+    # Assign cluster labels to the DataFrame (for inspection or further use)
+    movies_df['cluster'] = clusters
+
+    # Find the cluster of the selected movie and similar movies within the same cluster
+    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
+    selected_movie_cluster = clusters[selected_movie_index]
+    similar_movies = movies_df[movies_df['cluster'] == selected_movie_cluster]
+
+    return similar_movies
 
 
 app = tk.Tk()
