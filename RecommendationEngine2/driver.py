@@ -182,14 +182,12 @@ def cluster_movies_by_title_and_genre(movies_df, selected_movie, k):
     combined_features = hstack([genre_matrix, title_matrix])
 
     # Normalize the combined features to ensure equal importance
-    scaler = StandardScaler(with_mean=False)  # Avoid centering sparse matrix
+    scaler = StandardScaler(with_mean=False)
     combined_features_normalized = scaler.fit_transform(combined_features)
 
-    # Clustering: Apply k-means (or another suitable algorithm) on the normalized features
     kmeans = KMeans(n_clusters=k, random_state=42)
     clusters = kmeans.fit_predict(combined_features_normalized)
 
-    # Assign cluster labels to the DataFrame (for inspection or further use)
     movies_df['cluster'] = clusters
 
     # Find the cluster of the selected movie and similar movies within the same cluster
