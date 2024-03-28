@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
+from sklearn.metrics.pairwise import cosine_similarity
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -264,8 +265,10 @@ update_listbox()  # Initially populate the listbox
 
 # Filter Movies
 # Cosine Similarity      (Description)
-def cosine(cosWeight):
-    return 1  # Placeholder return
+def cosine(cosWeight, baseOverview: str, compareOverview: str):
+    tfidfMatrix = TfidfVectorizer().fit_transform((baseOverview, compareOverview))
+    results = cosine_similarity(tfidfMatrix[0], tfidfMatrix[1])
+    return results[0][0]  # Placeholder return
 
 
 # Levenshtein Distance   (Title)
