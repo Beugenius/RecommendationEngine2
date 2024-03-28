@@ -49,6 +49,30 @@ def compSearch(title: str, compare: str):
     else:
         return False
 
+def compareTitle(base: str, compare: str):
+    """
+    :param base: the base title (e.g., 'x' in lambda x function)
+    :param compare: the compare title (e.g., title of selected movie)
+    :return: fraction (similar / total)
+
+    Example: \n
+    df['JaccardWordSimilarity'] = df['title'].map(lambda x: compareTitle(x, SelectedMovieTitle))
+    """
+    base = base.lower()
+    compare = compare.lower()
+
+    baseWords = base.split(" ")[:-1]
+    compareWords = compare.split(" ")[:-1]
+    badwords = ['the', 'and', 'of', 'le', 'in', 'vs.', 'to', 'a', 'on']
+    baseWords = set([x for x in baseWords if x not in badwords])
+    compareWords = set([x for x in compareWords if x not in badwords])
+
+    numerator = len(baseWords.intersection(compareWords))
+    denominator = len(baseWords.union(compareWords))
+    if(denominator == 0):
+        denominator = 1
+    return float(numerator) / float(denominator)
+
 # Function to update the listbox based on search query
 def update_listbox(*args):
     search_term = search_var.get().lower()
