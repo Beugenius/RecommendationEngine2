@@ -103,7 +103,26 @@ def enter(*args):
     listbox.pack_forget()
     print(selection)
     answerList.bindtags([answerList, app, "all"])
-    answerList.insert(tk.END, 'This is where we add our results. This text currently represents one element')
+
+    k_value = int(k_spinbox.get())
+    selected_title = selection
+
+    cluster_title = cluster_by_title.get() == 1
+    cluster_genres = cluster_by_genres.get() == 1
+
+    global movies
+
+    clustered_movies = pd.DataFrame()
+
+    if cluster_title and not cluster_genres:
+        clustered_movies = cluster_movies_by_title(movies, selected_title, k_value)
+    elif not cluster_title and cluster_genres:
+        clustered_movies = cluster_movies_by_genre(movies, selected_title, k_value)
+    elif cluster_title and cluster_genres:
+        clustered_movies = cluster_movies_by_title_and_genre(movies, selected_title, k_value)
+    else:
+        answerList.insert(tk.END, "Please select at least one option for clustering (Title or Genres).")
+    #PUT CODE HERE FOR FILTERING, YOU CAN PASS IN clustered_movies
     answerList.pack(fill=tk.BOTH, expand=True)
 
 def reset(*args):
