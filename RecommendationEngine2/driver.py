@@ -123,6 +123,7 @@ def enter(*args):
     else:
         answerList.insert(tk.END, "Please select at least one option for clustering (Title or Genres).")
     #PUT CODE HERE FOR FILTERING, YOU CAN PASS IN clustered_movies
+    print(clustered_movies) # for testing, delete it later
     answerList.pack(fill=tk.BOTH, expand=True)
 
 def reset(*args):
@@ -227,8 +228,8 @@ k_label.pack()
 k_spinbox = ttk.Spinbox(app, from_=3, to=100, width=5)
 k_spinbox.pack()
 
-cluster_by_title = tk.IntVar(value=0)  # Default to checked for "Title"
-cluster_by_genres = tk.IntVar(value=0)  # Default to unchecked for "Genres"
+cluster_by_title = tk.IntVar(value=0)
+cluster_by_genres = tk.IntVar(value=0)
 
 # Create checkboxes for Title/Genre for clustering
 title_checkbox = tk.Checkbutton(app, text="Title", variable=cluster_by_title)
@@ -236,6 +237,35 @@ genres_checkbox = tk.Checkbutton(app, text="Genres", variable=cluster_by_genres)
 
 title_checkbox.pack()
 genres_checkbox.pack()
+
+filters_label = tk.Label(app, text="Filters")
+filters_label.pack()
+
+# Checkboxes for selecting filters
+filter_by_title = tk.IntVar(value=0)
+filter_by_description = tk.IntVar(value=0)
+filter_by_year = tk.IntVar(value=0)
+
+# Entry variables for percentages
+title_percentage_var = tk.StringVar(value="0")
+description_percentage_var = tk.StringVar(value="0")
+year_percentage_var = tk.StringVar(value="0")
+
+# Create and pack checkboxes with entry boxes for percentages
+title_filter_frame = tk.Frame(app)
+tk.Checkbutton(title_filter_frame, text="Title", variable=filter_by_title).pack(side=tk.LEFT)
+tk.Entry(title_filter_frame, textvariable=title_percentage_var, width=5).pack(side=tk.LEFT)
+title_filter_frame.pack()
+
+description_filter_frame = tk.Frame(app)
+tk.Checkbutton(description_filter_frame, text="Description", variable=filter_by_description).pack(side=tk.LEFT)
+tk.Entry(description_filter_frame, textvariable=description_percentage_var, width=5).pack(side=tk.LEFT)
+description_filter_frame.pack()
+
+year_filter_frame = tk.Frame(app)
+tk.Checkbutton(year_filter_frame, text="Year", variable=filter_by_year).pack(side=tk.LEFT)
+tk.Entry(year_filter_frame, textvariable=year_percentage_var, width=5).pack(side=tk.LEFT)
+year_filter_frame.pack()
 
 answerList = tk.Listbox(app)
 
