@@ -166,6 +166,29 @@ listbox.bind('<<ListboxSelect>>', select_movie)
 
 update_listbox()  # Initially populate the listbox
 
+
+# Filter Movies
+def filter_movies(cosWeight, levenWeight, euclidWeight, kmovies):
+    cosine(cosWeight)
+    levenshtein(levenWeight)
+    euclidean(euclidWeight)
+
+
+# Cosine Similarity      (Description)
+def cosine(cosWeight):
+    return 1  # Placeholder return
+
+
+# Levenshtein Distance   (Title)
+def levenshtein(levenWeight):
+    return 1  # Placeholder return
+
+
+# Euclidean Distance     (Year)
+def euclidean(euclidWeight):
+    return 1  # Placeholder return
+
+
 app.mainloop()
 
 print("Last selected movie:", selected_movie.get())
