@@ -1,3 +1,4 @@
+
 import pandas as pd
 import tkinter as tk
 from tkinter import Listbox, StringVar, Entry, Label, Button, ttk
@@ -14,6 +15,8 @@ pd.set_option('display.width', 1000)
 pd.set_option('display.expand_frame_repr', False)
 
 
+def euclidean_distance(base_case_year: int, comparator_year: int):
+    return abs(base_case_year - comparator_year)
 
 def cleanid(id: str):
     id = str(id)
@@ -242,12 +245,6 @@ update_listbox()  # Initially populate the listbox
 
 
 # Filter Movies
-def filter_movies(cosWeight, levenWeight, euclidWeight, kmovies):
-    cosine(cosWeight)
-    levenshtein(levenWeight)
-    euclidean(euclidWeight)
-
-
 # Cosine Similarity      (Description)
 def cosine(cosWeight):
     return 1  # Placeholder return
@@ -259,8 +256,25 @@ def levenshtein(levenWeight):
 
 
 # Euclidean Distance     (Year)
-def euclidean(euclidWeight):
-    return 1  # Placeholder return
+def euclidean(df, selected_movie, euclidWeight):
+    df['year'] = df['title'].str.strip().str[-5:-1]
+    df['year'] = pd.to_numeric(df['year'], errors='coerce').dropna()
+    base_case = df.loc[selected_movie['imdbId']]
+    df['euclidean'] = df['year'].map(lambda x: euclidean_distance(float(base_case['year']), float(x)))
+    sorted_df = df.sort_values(by='euclidean')
+
+    return sorted_df.head(euclidWeight)
+
+#This also needs a dataframe and movie to select
+def filter_movies(df, selected_movie, cosWeight, levenWeight, euclidWeight, kmovies):
+    cosWeight = kmovies - int(kmovies * cosWeight)
+    cosine(cosWeight)
+
+    levenWeight = kmovies - int(kmovies * levenWeight)
+    levenshtein(levenWeight)
+
+    euclidWeight = kmovies - int(kmovies * euclidWeight)
+    df = euclidean(df, selected_movie, euclidWeight)
 
 
 app.mainloop()
