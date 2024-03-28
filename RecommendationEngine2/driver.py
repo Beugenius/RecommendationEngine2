@@ -93,13 +93,14 @@ def update_listbox(*args):
     for match in matches:
         listbox.insert(tk.END, match)
 
+
+selection = ""
 # Function to handle movie selection
 def select_movie(*args):
-    selection = listbox.get(listbox.curselection())
-    selectedRow = movies[movies['title'] == selection]
-    print(selectedRow)
+    global selection
+    selection = movies[movies['title'] == listbox.get(listbox.curselection())]
 
-def enter(selected_movie_arg):
+def enter(*args):
     listbox.pack_forget()
     answerList.bindtags([answerList, app, "all"])
     answerList.insert(tk.END, 'This is where we add our results. This text currently represents one element')
