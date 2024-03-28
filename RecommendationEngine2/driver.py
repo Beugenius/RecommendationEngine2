@@ -42,8 +42,7 @@ def loadMoviesWithDescriptions():
     descriptions = loadAndCleanDesc()
     cdf = df.merge(descriptions, how='inner', on='imdbId')
     cdf = cdf.sort_values(by='movieId', ascending=True)
-    print(cdf.head())
-    return df
+    return cdf
 
 
 movies = loadMoviesWithDescriptions()
@@ -102,6 +101,7 @@ def select_movie(*args):
 
 def enter(*args):
     listbox.pack_forget()
+    print(selection)
     answerList.bindtags([answerList, app, "all"])
     answerList.insert(tk.END, 'This is where we add our results. This text currently represents one element')
     answerList.pack(fill=tk.BOTH, expand=True)
