@@ -265,7 +265,6 @@ def euclidean(df, selected_movie, euclidWeight):
 
     return sorted_df.head(euclidWeight)
 
-#This also needs a dataframe and movie to select
 def filter_movies(df, selected_movie, cosWeight, levenWeight, euclidWeight, kmovies):
     cosWeight = kmovies - int(kmovies * cosWeight)
     cosine(cosWeight)
