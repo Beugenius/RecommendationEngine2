@@ -134,8 +134,8 @@ def enter(*args):
     else:
         answerList.insert(tk.END, "Please select at least one option for clustering (Title or Genres).")
     #PUT CODE HERE FOR FILTERING, YOU CAN PASS IN clustered_movies
-    if filter_by_description.get() == 1:
-        clustered_movies = cosine(clustered_movies, 5)
+    # if filter_by_description.get() == 1:
+    #     clustered_movies = cosine(clustered_movies, 5)
     print(clustered_movies) # for testing, delete it later
     answerList.pack(fill=tk.BOTH, expand=True)
 
