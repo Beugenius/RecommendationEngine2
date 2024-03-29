@@ -302,30 +302,43 @@ def cosine(cosWeight, baseOverview: str, compareOverview: str):
 
 
 # Levenshtein Distance   (Title)
-def levenshtein(levenWeight):
-    return 1  # Placeholder return
+def levenshtein(df, levenWeight):
+    base_case = df.loc[selection['imdbId']]
+    df['levenshtein'] = df[comparison_type].map(lambda x: Levenshtein.distance(base_case['title'], x))
+
+    sorted_df = df.sort_values(by='levenshtein')
+    return sorted_df['title'].head(levenWeight)
 
 
 # Euclidean Distance     (Year)
-def euclidean(df, selected_movie, euclidWeight):
+def euclidean(df, euclidWeight):
     df['year'] = df['title'].str.strip().str[-5:-1]
     df['year'] = pd.to_numeric(df['year'], errors='coerce').dropna()
-    base_case = df.loc[selected_movie['imdbId']]
+    base_case = df.loc[selection['imdbId']]
     df['euclidean'] = df['year'].map(lambda x: euclidean_distance(float(base_case['year']), float(x)))
     sorted_df = df.sort_values(by='euclidean')
 
     return sorted_df.head(euclidWeight)
 
-def filter_movies(df, selected_movie, cosWeight, levenWeight, euclidWeight, kmovies):
-    cosWeight = kmovies - int(kmovies * cosWeight)
+def filter_movies(df, cosWeight, levenWeight, euclidWeight):
+    choose = len(df)
+
+    cosWeight = choose - int(choose * cosWeight) + 3
+    if cosWeight < 1:
+        cosWeight = 1
     cosine(cosWeight)
 
-    levenWeight = kmovies - int(kmovies * levenWeight)
-    levenshtein(levenWeight)
+    levenWeight = choose - int(choose * levenWeight) + 3
+    if levenWeight < 1:
+        levenWeight = 1
+    levenshtein(df, levenWeight)
 
-    euclidWeight = kmovies - int(kmovies * euclidWeight)
-    df = euclidean(df, selected_movie, euclidWeight)
+    euclidWeight = choose - int(choose * euclidWeight) + 3
+    if euclidWeight < 1:
+        euclidWeight = 1
+    df = euclidean(df, euclidWeight)
 
+    return df
 
 app.mainloop()
 
