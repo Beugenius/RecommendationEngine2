@@ -1,3 +1,4 @@
+import re
 
 import pandas as pd
 import tkinter as tk
@@ -149,12 +150,6 @@ def preprocess_genres(movies):
 # One-hot encoded genres
 preprocessed_data = preprocess_genres(movies)
 
-# Jaccard Similarity for Titles
-def calc_jaccard_similarity(selected_movie, movies_df):
-    titles = movies_df['title'].tolist()
-    title_sets = [set(title.lower().split()) for title in titles]
-    selected_title_set = set(selected_movie.lower().split)
-
 
 # Cluster movies based on genres
 def cluster_movies_by_genre(movies_df, selected_movie, k):
@@ -176,33 +171,42 @@ def cluster_movies_by_genre(movies_df, selected_movie, k):
 
 
 def cluster_movies_by_title(movies_df, selected_movie, k):
-    # Extract TF-IDF features from movie titles
-    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df['title'])
+    # Remove year from titles
+    movies_df_copy = movies_df.copy()
+    movies_df_copy['title'] = movies_df_copy['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
 
-    # Maybe Optional?: Apply dimensionality reduction (comment if needed)
-    pca = PCA(n_components=0.95)  # Retain 95% of variance
-    tfidf_matrix_reduced = pca.fit_transform(tfidf_matrix.toarray())
+    # Extract TF-IDF features from movie titles without years
+    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df_copy['title'])
 
     # Apply k-means clustering
     kmeans = KMeans(n_clusters=k, random_state=42)
-    title_clusters = kmeans.fit_predict(tfidf_matrix_reduced)
+    title_clusters = kmeans.fit_predict(tfidf_matrix)
 
-    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
+    # Adjust selected_movie to match the preprocessing
+    selected_movie_cleaned = re.sub(r"\(\d{4}\)", "", selected_movie).strip()
+    selected_movie_indices = movies_df_copy.index[movies_df_copy['title'].str.contains(selected_movie_cleaned, regex=False, case=False)].tolist()
+    if not selected_movie_indices:
+        return pd.DataFrame()  # Return an empty DataFrame if no match is found
+    selected_movie_index = selected_movie_indices[0]
     selected_movie_cluster = title_clusters[selected_movie_index]
 
-    cluster_movies = movies_df.iloc[title_clusters == selected_movie_cluster]
+    cluster_movies = movies_df_copy[title_clusters == selected_movie_cluster].copy()
 
     return cluster_movies
 
 
 def cluster_movies_by_title_and_genre(movies_df, selected_movie, k):
-    # Process genres: One-hot encoding
-    genre_matrix = movies_df['genres'].str.get_dummies(sep='|')
+    # Remove year from titles
+    movies_df_copy = movies_df.copy()
+    movies_df_copy['title'] = movies_df_copy['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
 
-    # Process titles: TF-IDF
+    # Process genres: One-hot encoding
+    genre_matrix = movies_df_copy['genres'].str.get_dummies(sep='|')
+
+    # Process titles: TF-IDF without years
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    title_matrix = tfidf_vectorizer.fit_transform(movies_df['title'])
+    title_matrix = tfidf_vectorizer.fit_transform(movies_df_copy['title'])
 
     # Combine features: Stacking the genre and title matrices horizontally
     combined_features = hstack([genre_matrix, title_matrix])
@@ -216,8 +220,9 @@ def cluster_movies_by_title_and_genre(movies_df, selected_movie, k):
 
     movies_df['cluster'] = clusters
 
-    # Find the cluster of the selected movie and similar movies within the same cluster
-    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
+    # Adjust selected_movie to match the preprocessing
+    selected_movie_cleaned = re.sub(r"\(\d{4}\)", "", selected_movie).strip()
+    selected_movie_index = movies_df_copy.index[movies_df_copy['title'] == selected_movie_cleaned].tolist()[0]
     selected_movie_cluster = clusters[selected_movie_index]
     similar_movies = movies_df[movies_df['cluster'] == selected_movie_cluster]
 
