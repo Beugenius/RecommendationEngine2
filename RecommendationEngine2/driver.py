@@ -311,7 +311,7 @@ def levenshtein(df, levenWeight):
     base_case = df.loc[selection['imdbId']]
     df['levenshtein'] = df[comparison_type].map(lambda x: Levenshtein.distance(base_case['title'], x))
 
-    sorted_df = df.sort_values(by='levenshtein')
+    sorted_df = df.sort_values(by='levenshtein', ascending=False)
     return sorted_df['title'].head(levenWeight)
 
 
@@ -321,7 +321,7 @@ def euclidean(df, euclidWeight):
     df['year'] = pd.to_numeric(df['year'], errors='coerce').dropna()
     base_case = df.loc[selection['imdbId']]
     df['euclidean'] = df['year'].map(lambda x: euclidean_distance(float(base_case['year']), float(x)))
-    sorted_df = df.sort_values(by='euclidean')
+    sorted_df = df.sort_values(by='euclidean', ascending=False)
 
     return sorted_df.head(euclidWeight)
 
