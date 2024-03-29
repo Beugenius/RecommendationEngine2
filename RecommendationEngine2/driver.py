@@ -171,27 +171,49 @@ def cluster_movies_by_genre(movies_df, selected_movie, k):
     return cluster_movies
 
 
+# def cluster_movies_by_title(movies_df, selected_movie, k):
+#     # Remove years from the titles
+#     movies_df['title_processed'] = movies_df['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
+#
+#     # use tfdif
+#     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+#     tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df['title_processed'])
+#
+#     # kmeans clustering
+#     kmeans = KMeans(n_clusters=k, random_state=42)
+#     title_clusters = kmeans.fit_predict(tfidf_matrix)
+#
+#     # find the index of the selected movie
+#     selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
+#     selected_movie_cluster = title_clusters[selected_movie_index]
+#
+#     # return movies from the same cluster
+#     cluster_movies = movies_df.iloc[title_clusters == selected_movie_cluster].copy()
+#     # dropping the title_processed column for the output
+#     cluster_movies.drop('title_processed', axis=1, inplace=True)
+#
+#     return cluster_movies
+
 def cluster_movies_by_title(movies_df, selected_movie, k):
-    # Remove years from the titles
-    movies_df['title_processed'] = movies_df['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
+    # Remove year from titles
+    movies_df_copy = movies_df.copy()
+    movies_df_copy['title'] = movies_df_copy['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
 
-    # use tfdif
+    # Extract TF-IDF features from movie titles without years
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df['title_processed'])
+    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df_copy['title'])
 
-    # kmeans clustering
+    # Apply k-means clustering
     kmeans = KMeans(n_clusters=k, random_state=42)
     title_clusters = kmeans.fit_predict(tfidf_matrix)
+    movies_df_copy['cluster'] = title_clusters
+    print(movies_df_copy)
 
-    # find the index of the selected movie
-    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
-    selected_movie_cluster = title_clusters[selected_movie_index]
-
-    # return movies from the same cluster
-    cluster_movies = movies_df.iloc[title_clusters == selected_movie_cluster].copy()
-    # dropping the title_processed column for the output
-    cluster_movies.drop('title_processed', axis=1, inplace=True)
-
+    # Adjust selected_movie to match the preprocessing
+    selected_movie_cleaned = re.sub(r"\(\d{4}\)", "", selected_movie).strip()
+    selected_cluster = movies_df_copy[movies_df_copy['title'] == selected_movie_cleaned]['cluster'].tolist()[0]
+    cluster_movies = movies_df_copy[movies_df_copy['cluster'] == selected_cluster]
+    
     return cluster_movies
 
 
