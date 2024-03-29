@@ -302,7 +302,7 @@ update_listbox()  # Initially populate the listbox
 # Cosine Similarity      (Description)
 def cosine(df: pd.DataFrame, cosWeight):
     df['cosine'] = df['overview'].map(lambda x: cosine_similarity(x, selection['overview']))
-    sorted_df = df.sort_values(by='cosine')
+    sorted_df = df.sort_values(by='cosine', ascending=False)
     return sorted_df.head(cosWeight)
 
 
