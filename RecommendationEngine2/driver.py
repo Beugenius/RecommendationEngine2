@@ -19,6 +19,11 @@ pd.set_option('display.expand_frame_repr', False)
 def euclidean_distance(base_case_year: int, comparator_year: int):
     return abs(base_case_year - comparator_year)
 
+def cosine_similarity_func(baseOverview: str, compareOverview: str):
+    tfidfMatrix = TfidfVectorizer().fit_transform((baseOverview, compareOverview))
+    results = cosine_similarity(tfidfMatrix[0], tfidfMatrix[1])
+    return results[0][0]
+
 def cleanid(id: str):
     id = str(id)
     if id == "0":
@@ -94,7 +99,7 @@ def update_listbox(*args):
         listbox.insert(tk.END, match)
 
 
-selection = ""
+selection = pd.DataFrame
 # Function to handle movie selection
 def select_movie(*args):
     global selection
@@ -295,10 +300,10 @@ update_listbox()  # Initially populate the listbox
 
 # Filter Movies
 # Cosine Similarity      (Description)
-def cosine(cosWeight, baseOverview: str, compareOverview: str):
-    tfidfMatrix = TfidfVectorizer().fit_transform((baseOverview, compareOverview))
-    results = cosine_similarity(tfidfMatrix[0], tfidfMatrix[1])
-    return results[0][0]  # Placeholder return
+def cosine(df: pd.DataFrame, cosWeight):
+    df['cosine'] = df['overview'].map(lambda x: cosine_similarity_func(x, selection['overview']))
+    sorted_df = df.sort_values(by='cosine', ascending=False)
+    return sorted_df.head(cosWeight)
 
 
 # Levenshtein Distance   (Title)
