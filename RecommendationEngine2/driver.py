@@ -330,20 +330,20 @@ def euclidean(df, euclidWeight):
 
     return sorted_df.head(euclidWeight)
 
-def filter_movies(df, cosWeight, levenWeight, euclidWeight):
+def filter_movies(df):
     choose = len(df)
 
-    cosWeight = choose - int(choose * cosWeight) + 3
+    cosWeight = choose - int(choose * (float(description_percentage_var.get()/100))) + 3
     if cosWeight < 1:
         cosWeight = 1
     cosine(cosWeight)
 
-    levenWeight = choose - int(choose * levenWeight) + 3
+    levenWeight = choose - int(choose * (float(title_percentage_var.get()/100))) + 3
     if levenWeight < 1:
         levenWeight = 1
     levenshtein(df, levenWeight)
 
-    euclidWeight = choose - int(choose * euclidWeight) + 3
+    euclidWeight = choose - int(choose * (float(year_percentage_var.get()/100))) + 3
     if euclidWeight < 1:
         euclidWeight = 1
     df = euclidean(df, euclidWeight)
