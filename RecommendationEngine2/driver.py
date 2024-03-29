@@ -22,6 +22,9 @@ def euclidean_distance(base_case_year: int, comparator_year: int):
     return abs(base_case_year - comparator_year)
 
 def cosine_similarity_func(baseOverview: str, compareOverview: str):
+    baseOverview = baseOverview.lower()
+    compareOverview = compareOverview.lower()
+    print(f"Base: \n{baseOverview}\nCompare: \n{compareOverview}")
     tfidfMatrix = TfidfVectorizer().fit_transform((baseOverview, compareOverview))
     results = cosine_similarity(tfidfMatrix[0], tfidfMatrix[1])
     return results[0][0]
@@ -131,6 +134,8 @@ def enter(*args):
     else:
         answerList.insert(tk.END, "Please select at least one option for clustering (Title or Genres).")
     #PUT CODE HERE FOR FILTERING, YOU CAN PASS IN clustered_movies
+    if filter_by_description.get() == 1:
+        clustered_movies = cosine(clustered_movies, 5)
     print(clustered_movies) # for testing, delete it later
     answerList.pack(fill=tk.BOTH, expand=True)
 
@@ -156,7 +161,6 @@ preprocessed_data = preprocess_genres(movies)
 def cluster_movies_by_genre(movies_df, selected_movie, k):
     # One-hot encode the genres
     genre_matrix = movies_df['genres'].str.get_dummies(sep='|')
-
     # Apply k-means clustering
     kmeans = KMeans(n_clusters=k, random_state=42)
     genre_clusters = kmeans.fit_predict(genre_matrix)
@@ -165,9 +169,11 @@ def cluster_movies_by_genre(movies_df, selected_movie, k):
     selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
     selected_movie_cluster = genre_clusters[selected_movie_index]
 
+    cluster_movies = movies_df.copy()
+    cluster_movies['genre_cluster'] = genre_clusters
     # Find other movies in the same cluster
-    cluster_movies = movies_df.iloc[genre_clusters == selected_movie_cluster]
-
+    #cluster_movies = movies_df.iloc[genre_clusters == selected_movie_cluster]
+    cluster_movies = cluster_movies[cluster_movies['genre_cluster'] == selected_movie_cluster]
     return cluster_movies
 
 
@@ -213,7 +219,7 @@ def cluster_movies_by_title(movies_df, selected_movie, k):
     selected_movie_cleaned = re.sub(r"\(\d{4}\)", "", selected_movie).strip()
     selected_cluster = movies_df_copy[movies_df_copy['title'] == selected_movie_cleaned]['cluster'].tolist()[0]
     cluster_movies = movies_df_copy[movies_df_copy['cluster'] == selected_cluster]
-    
+
     return cluster_movies
 
 
@@ -327,7 +333,7 @@ update_listbox()  # Initially populate the listbox
 # Filter Movies
 # Cosine Similarity      (Description)
 def cosine(df: pd.DataFrame, cosWeight):
-    df['cosine'] = df['overview'].map(lambda x: cosine_similarity_func(x, selection['overview']))
+    df['cosine'] = df['overview'].map(lambda x: cosine_similarity_func(str(x), str(selection['overview'].values[0])))
     sorted_df = df.sort_values(by='cosine', ascending=False)
     return sorted_df.head(cosWeight)
 
