@@ -106,7 +106,7 @@ def enter(*args):
     answerList.bindtags([answerList, app, "all"])
 
     k_value = int(k_spinbox.get())
-    selected_title = selection
+    selected_title = selection['title'].iloc[0]
 
     cluster_title = cluster_by_title.get() == 1
     cluster_genres = cluster_by_genres.get() == 1
