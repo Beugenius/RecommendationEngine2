@@ -1,15 +1,14 @@
 import re
-
 import numpy as np
+import Levenshtein
+from Levenshtein import distance
 import pandas as pd
 import tkinter as tk
 from tkinter import Listbox, StringVar, Entry, Label, Button, ttk
 
 from scipy.sparse import hstack
 from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
 from sklearn.metrics.pairwise import cosine_similarity
 
 pd.set_option('display.max_rows', 500)
@@ -24,7 +23,7 @@ def euclidean_distance(base_case_year: int, comparator_year: int):
 def cosine_similarity_func(baseOverview: str, compareOverview: str):
     baseOverview = baseOverview.lower()
     compareOverview = compareOverview.lower()
-    print(f"Base: \n{baseOverview}\nCompare: \n{compareOverview}")
+    #print(f"Base: \n{baseOverview}\nCompare: \n{compareOverview}")
     tfidfMatrix = TfidfVectorizer().fit_transform((baseOverview, compareOverview))
     results = cosine_similarity(tfidfMatrix[0], tfidfMatrix[1])
     return results[0][0]
@@ -136,7 +135,11 @@ def enter(*args):
     #PUT CODE HERE FOR FILTERING, YOU CAN PASS IN clustered_movies
     # if filter_by_description.get() == 1:
     #     clustered_movies = cosine(clustered_movies, 5)
-    print(clustered_movies) # for testing, delete it later
+    #print(clustered_movies) # for testing, delete it later
+
+    filtered = filter_movies(clustered_movies)
+    for index, row in filtered.iterrows():
+        answerList.insert(tk.END, row['title'])
     answerList.pack(fill=tk.BOTH, expand=True)
 
 def reset(*args):
@@ -201,59 +204,59 @@ def cluster_movies_by_genre(movies_df, selected_movie, k):
 #     return cluster_movies
 
 def cluster_movies_by_title(movies_df, selected_movie, k):
-    # Remove year from titles
+    # Copy the dataframe and add a new column for processed titles
     movies_df_copy = movies_df.copy()
-    movies_df_copy['title'] = movies_df_copy['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
+    movies_df_copy['processed_title'] = movies_df_copy['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
 
-    # Extract TF-IDF features from movie titles without years
+    # Extract TF-IDF features from the processed titles
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df_copy['title'])
+    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df_copy['processed_title'])
 
     # Apply k-means clustering
     kmeans = KMeans(n_clusters=k, random_state=42)
     title_clusters = kmeans.fit_predict(tfidf_matrix)
     movies_df_copy['cluster'] = title_clusters
-    print(movies_df_copy)
 
-    # Adjust selected_movie to match the preprocessing
+    # Adjust selected_movie to match the preprocessing and find its cluster
     selected_movie_cleaned = re.sub(r"\(\d{4}\)", "", selected_movie).strip()
-    selected_cluster = movies_df_copy[movies_df_copy['title'] == selected_movie_cleaned]['cluster'].tolist()[0]
+    selected_cluster = movies_df_copy[movies_df_copy['processed_title'] == selected_movie_cleaned]['cluster'].iloc[0]
+
+    # Return movies in the same cluster without altering the original title
     cluster_movies = movies_df_copy[movies_df_copy['cluster'] == selected_cluster]
 
-    return cluster_movies
-
+    return cluster_movies.drop(['processed_title', 'cluster'], axis=1)
 
 from sklearn.preprocessing import normalize
 
 
 def cluster_movies_by_title_and_genre(movies_df, selected_movie, k):
-    # Preprocess Titles
-    movies_df['title_processed'] = movies_df['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
+    # Copy the dataframe and add a new column for processed titles
+    movies_df_copy = movies_df.copy()
+    movies_df_copy['processed_title'] = movies_df_copy['title'].str.replace(r"\(\d{4}\)", "", regex=True).str.strip()
 
-    # Vectorize Titles with TF-IDF
+    # Extract TF-IDF features from processed titles
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df['title_processed'])
+    tfidf_matrix = tfidf_vectorizer.fit_transform(movies_df_copy['processed_title'])
 
-    # One-Hot Encode Genres
+    # One-hot encode genres
     genre_matrix = movies_df['genres'].str.get_dummies(sep='|')
 
-    # Combine Features (Normalize before combining to ensure equal weighting)
-    combined_features = normalize(hstack((tfidf_matrix.toarray(), genre_matrix.values)))
+    # Combine features: TF-IDF features and one-hot encoded genre features
+    combined_features = hstack([tfidf_matrix, genre_matrix])
 
-    # Apply K-Means Clustering
+    # Apply k-means clustering on the combined features
     kmeans = KMeans(n_clusters=k, random_state=42)
     combined_clusters = kmeans.fit_predict(combined_features)
+    movies_df_copy['combined_cluster'] = combined_clusters
 
-    # Identify the Cluster of the Selected Movie
-    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
-    selected_movie_cluster = combined_clusters[selected_movie_index]
+    # Adjust selected_movie to match the preprocessing and find its cluster
+    selected_movie_cleaned = re.sub(r"\(\d{4}\)", "", selected_movie).strip()
+    selected_cluster = movies_df_copy[movies_df_copy['processed_title'] == selected_movie_cleaned]['combined_cluster'].iloc[0]
 
-    # Filter and Return Movies from the Same Cluster
-    cluster_movies = movies_df.iloc[combined_clusters == selected_movie_cluster].copy()
-    # Dropping the 'title_processed' column for the output
-    cluster_movies.drop('title_processed', axis=1, inplace=True)
+    # Find other movies in the same combined cluster
+    cluster_movies = movies_df_copy[movies_df_copy['combined_cluster'] == selected_cluster]
 
-    return cluster_movies
+    return cluster_movies.drop(['processed_title', 'combined_cluster'], axis=1)
 
 
 app = tk.Tk()
@@ -340,19 +343,27 @@ def cosine(df: pd.DataFrame, cosWeight):
 
 # Levenshtein Distance   (Title)
 def levenshtein(df, levenWeight):
-    base_case = df.loc[selection['imdbId']]
-    df['levenshtein'] = df[comparison_type].map(lambda x: Levenshtein.distance(base_case['title'], x))
+    # Preprocess to remove the year in parentheses from the selected movie title for comparison
+    selection['original_title'] = selection['title'].str.strip().str[:-6]
 
-    sorted_df = df.sort_values(by='levenshtein', ascending=False)
-    return sorted_df['title'].head(levenWeight)
+    # Calculating Levenshtein distance using titles without years
+    df['levenshtein'] = df['original_title'].map(lambda x: Levenshtein.distance(str(selection['original_title']), str(x)))
+
+    # Sorting by Levenshtein distance to get the closest matches (most similar first)
+    sorted_df = df.sort_values(by='levenshtein', ascending=True)
+
+    # Returning the top levenWeight matches, including their original titles with years
+    return sorted_df.head(levenWeight)
 
 
 # Euclidean Distance     (Year)
 def euclidean(df, euclidWeight):
     df['year'] = df['title'].str.strip().str[-5:-1]
     df['year'] = pd.to_numeric(df['year'], errors='coerce').dropna()
-    base_case = df.loc[selection['imdbId']]
-    df['euclidean'] = df['year'].map(lambda x: euclidean_distance(float(base_case['year']), float(x)))
+
+    selection['year'] = selection['title'].str.strip().str[-5:-1]
+
+    df['euclidean'] = df['year'].map(lambda x: euclidean_distance(float(selection['year']), float(x)))
     sorted_df = df.sort_values(by='euclidean', ascending=False)
 
     return sorted_df.head(euclidWeight)
@@ -360,22 +371,27 @@ def euclidean(df, euclidWeight):
 def filter_movies(df):
     choose = len(df)
 
-    cosWeight = choose - int(choose * (float(description_percentage_var.get()/100))) + 3
-    if cosWeight < 1:
-        cosWeight = 1
-    cosine(cosWeight)
+    #cosWeight = choose - int(choose * (float(description_percentage_var.get()) / 100)) + 3
+    #if cosWeight < 1:
+    #    cosWeight = 1
+    #df = cosine(df, cosWeight)
 
-    levenWeight = choose - int(choose * (float(title_percentage_var.get()/100))) + 3
+    levenWeight = choose - int(choose * (float(title_percentage_var.get()) / 100)) + 3
     if levenWeight < 1:
         levenWeight = 1
-    levenshtein(df, levenWeight)
+    df = levenshtein(df, levenWeight)
 
-    euclidWeight = choose - int(choose * (float(year_percentage_var.get()/100))) + 3
+    euclidWeight = choose - int(choose * (float(year_percentage_var.get()) / 100)) + 3
     if euclidWeight < 1:
         euclidWeight = 1
     df = euclidean(df, euclidWeight)
 
-    return df
+    # This is so that if the selected movie is here, it is removed
+    # Keeps complaining about only being able to compare identically labeled series objects
+    #df = df[df['title'] != selection]
+
+    print(df)
+    return df.head(6)
 
 app.mainloop()
 
