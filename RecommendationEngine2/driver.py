@@ -371,10 +371,14 @@ def euclidean(df, euclidWeight):
 def filter_movies(df):
     choose = len(df)
 
-    #cosWeight = choose - int(choose * (float(description_percentage_var.get()) / 100)) + 3
-    #if cosWeight < 1:
-    #    cosWeight = 1
-    #df = cosine(df, cosWeight)
+    # This is so that if the selected movie is here, it is removed
+    drop = str(selection['title'])
+    df = df[df.title != drop]
+
+    cosWeight = choose - int(choose * (float(description_percentage_var.get()) / 100)) + 3
+    if cosWeight < 1:
+        cosWeight = 1
+    df = cosine(df, cosWeight)
 
     levenWeight = choose - int(choose * (float(title_percentage_var.get()) / 100)) + 3
     if levenWeight < 1:
@@ -385,10 +389,6 @@ def filter_movies(df):
     if euclidWeight < 1:
         euclidWeight = 1
     df = euclidean(df, euclidWeight)
-
-    # This is so that if the selected movie is here, it is removed
-    # Keeps complaining about only being able to compare identically labeled series objects
-    #df = df[df['title'] != selection]
 
     print(df)
     return df.head(6)
