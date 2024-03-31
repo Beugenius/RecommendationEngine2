@@ -159,26 +159,58 @@ def preprocess_genres(movies):
 # One-hot encoded genres
 preprocessed_data = preprocess_genres(movies)
 
+def compareGenre(basestr: str, comparestr: str):
+    baseArray = basestr.strip().split("|")
+    compareArray = comparestr.strip().split("|")
+
+    baseSet = set([x for x in baseArray])
+    compareSet = set([x for x in compareArray])
+
+    numerator = len(baseSet.intersection(compareSet))
+    denominator = len(baseSet.union(compareSet))
+
+    return float(numerator)/float(denominator)
+
 
 # Cluster movies based on genres
+# def cluster_movies_by_genre(movies_df, selected_movie, k):
+#     # One-hot encode the genres
+#     genre_matrix = movies_df['genres'].str.get_dummies(sep='|')
+#     print(f"GENRE MATRIX: \n{genre_matrix}\n")
+#     # Apply k-means clustering
+#     kmeans = KMeans(n_clusters=k, random_state=42)
+#     genre_clusters = kmeans.fit_predict(genre_matrix)
+#
+#     # Find the cluster of the selected movie
+#     selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
+#     selected_movie_cluster = genre_clusters[selected_movie_index]
+#
+#     cluster_movies = movies_df.copy()
+#     cluster_movies['genre_cluster'] = genre_clusters
+#     # Find other movies in the same cluster
+#     #cluster_movies = movies_df.iloc[genre_clusters == selected_movie_cluster]
+#     cluster_movies = cluster_movies[cluster_movies['genre_cluster'] == selected_movie_cluster]
+#     print(f"CLUSTER MOVIES: \n{cluster_movies}")
+#     return cluster_movies
+
 def cluster_movies_by_genre(movies_df, selected_movie, k):
     # One-hot encode the genres
-    genre_matrix = movies_df['genres'].str.get_dummies(sep='|')
+    moviesCopy = movies_df.copy()
+    selected_genres = movies_df[movies_df['title'] == selected_movie]['genres'].values[0]
+    moviesCopy['jgs'] = moviesCopy['genres'].map(lambda x: compareGenre(x, selected_genres))
     # Apply k-means clustering
     kmeans = KMeans(n_clusters=k, random_state=42)
-    genre_clusters = kmeans.fit_predict(genre_matrix)
-
+    genre_clusters = kmeans.fit_predict(moviesCopy['jgs'].values.reshape(-1, 1))
+    moviesCopy['genre_cluster'] = genre_clusters
     # Find the cluster of the selected movie
-    selected_movie_index = movies_df.index[movies_df['title'] == selected_movie].tolist()[0]
-    selected_movie_cluster = genre_clusters[selected_movie_index]
+    selected_movie_cluster = moviesCopy[moviesCopy['title'] == selected_movie]['genre_cluster'].values[0]
 
-    cluster_movies = movies_df.copy()
-    cluster_movies['genre_cluster'] = genre_clusters
+    cluster_movies = moviesCopy.copy()
     # Find other movies in the same cluster
-    #cluster_movies = movies_df.iloc[genre_clusters == selected_movie_cluster]
     cluster_movies = cluster_movies[cluster_movies['genre_cluster'] == selected_movie_cluster]
-    return cluster_movies
+    cluster_movies = cluster_movies.sort_values(by='jgs', ascending=False)
 
+    return cluster_movies
 
 # def cluster_movies_by_title(movies_df, selected_movie, k):
 #     # Remove years from the titles
