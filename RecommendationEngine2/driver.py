@@ -369,7 +369,7 @@ update_listbox()  # Initially populate the listbox
 # Cosine Similarity      (Description)
 def cosine(df: pd.DataFrame, cosWeight):
     df['cosine'] = df['overview'].map(lambda x: cosine_similarity_func(str(x), str(selection['overview'].values[0])))
-    sorted_df = df.sort_values(by='cosine', ascending=False)
+    sorted_df = df.sort_values(by='cosine', ascending=True)
     return sorted_df.head(cosWeight)
 
 
@@ -396,7 +396,7 @@ def euclidean(df, euclidWeight):
     selection['year'] = selection['title'].str.strip().str[-5:-1]
 
     df['euclidean'] = df['year'].map(lambda x: euclidean_distance(float(selection['year']), float(x)))
-    sorted_df = df.sort_values(by='euclidean', ascending=False)
+    sorted_df = df.sort_values(by='euclidean', ascending=True)
 
     return sorted_df.head(euclidWeight)
 
@@ -423,7 +423,7 @@ def filter_movies(df):
     df = euclidean(df, euclidWeight)
 
     print(df)
-    return df.head(6)
+    return df.head(10)
 
 app.mainloop()
 
