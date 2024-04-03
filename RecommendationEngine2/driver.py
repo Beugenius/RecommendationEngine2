@@ -359,7 +359,7 @@ def filter_movies(df):
     if filterByDescriptionBool:
         cosWeight = float(description_percentage_var.get())
         print(cosWeight)
-        df['cosine'] = df['overview'].map(lambda x: cosine_similarity_func(x, str(selection['overview'].values[0])))
+        df['cosine'] = df['overview'].map(lambda x: cosine_similarity_func(str(x), str(selection['overview'].values[0])))
         df['cosine'] = df['cosine'].map(lambda x: x * -1)
         df['cosine_normal'] = df['cosine'].map(lambda x: (x*cosWeight))
         df['total'] = df['total'] + df['cosine_normal']
